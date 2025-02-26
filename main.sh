@@ -56,9 +56,10 @@ get_apkmirror_version() {
 # Best but sometimes not work because APKmirror protection 
 apkmirror() {
     local name="$1"
-    local dpi="$2"
-    local arch="$3"
-    local type="$4"
+    local org="$2"
+    local dpi="$3"
+    local arch="$4"
+    local type="$5"
 
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
     version="${version:-$(req - "$url" | get_apkmirror_version | get_latest_version)}"
@@ -70,4 +71,4 @@ apkmirror() {
     req "$name-v$version.apkm" "$url"
 }
 
-apkmirror "hay-day" "" "arm64-v8a" "bundle"
+apkmirror "hay-day" "supercell" "" "arm64-v8a" "bundle"
