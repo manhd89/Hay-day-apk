@@ -81,11 +81,31 @@ if [ ! -f "$APKM_FILE" ]; then
 fi
 echo "[✔] Tải thành công: $APKM_FILE"
 
-# Tải bundletool.jar từ link khả dụng
+# Tải bundletool.jar từ link chính thức
 BUNDLETOOL_JAR="bundletool.jar"
 if [ ! -f "$BUNDLETOOL_JAR" ]; then
     echo "[*] Đang tải bundletool..."
     req "$BUNDLETOOL_JAR" "https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar"
+fi
+
+# Kiểm tra thiết bị và tạo file device-spec.json
+DEVICE_SPEC="device-spec.json"
+if [ ! -f "$DEVICE_SPEC" ]; then
+    echo "[*] Đang tạo device-spec.json..."
+    java -jar "$BUNDLETOOL_JAR" get-device-spec --output="$DEVICE_SPEC"
+fi
+
+# Kiểm tra nếu device-spec.json đã tạo thành công
+if [ ! -f "$DEVICE_SPEC" ]; then
+    echo "[!] Lỗi: Không thể tạo device-spec.json!"
+    exit 1
+fi
+
+# Kiểm tra file APKM đã có chưa
+APKM_FILE="hay-day.apkm"
+if [ ! -f "$APKM_FILE" ]; then
+    echo "[!] Lỗi: Không tìm thấy file APKM!"
+    exit 1
 fi
 
 # Giải nén file APKM
@@ -93,12 +113,19 @@ EXTRACT_DIR="extracted_apkm"
 echo "[*] Giải nén $APKM_FILE..."
 unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; exit 1; }
 
-# Hợp nhất Split APKs thành một APK duy nhất bằng extract-apks
+# Hợp nhất Split APKs thành một APK duy nhất
 FINAL_APK="final.apk"
 SIGNED_APK="signed.apk"
 echo "[*] Hợp nhất Split APKs..."
-java -jar "$BUNDLETOOL_JAR" extract-apks --apks="$EXTRACT_DIR/base.apks" --output-dir="final_apk"
-mv final_apk/*.apk "$FINAL_APK"
+java -jar "$BUNDLETOOL_JAR" extract-apks --apks="$EXTRACT_DIR/base.apks" --device-spec="$DEVICE_SPEC" --output-dir="final_apk"
+
+# Kiểm tra nếu file APK hợp nhất đã tạo thành công
+if [ ! -f "final_apk/universal.apk" ]; then
+    echo "[!] Lỗi: Không tìm thấy file APK sau khi hợp nhất!"
+    exit 1
+fi
+
+mv final_apk/universal.apk "$FINAL_APK"
 
 # Kiểm tra chữ ký của APK
 if command -v apksigner &> /dev/null; then
