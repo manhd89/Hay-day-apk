@@ -8,13 +8,51 @@ req() {
          --timeout=30 -nv -O "$@"
 }
 
-# Hàm tìm phiên bản mới nhất của Hay Day trên APKMirror
-get_latest_version() {
-    grep -oP 'class="fontBlack"[^>]*href="[^"]+"\s*>\K[^<]+' | sed 20q | awk '{print $NF}' | sort -V | tail -1
+# Find max version
+max() {
+	local max=0
+	while read -r v || [ -n "$v" ]; do
+		if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi
+	done
+	if [[ $max = 0 ]]; then echo ""; else echo "$max"; fi
 }
 
-# Hàm lấy link tải APKM từ APKMirror
-get_apkm_link() {
+# Get largest version (Just compatible with my way of getting versions code)
+get_latest_version() {
+    grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
+}
+
+# Filtered key words to extract link
+extract_filtered_links() {
+    local dpi="$1" arch="$2" type="$3"
+    awk -v dpi="$dpi" -v arch="$arch" -v type="$type" '
+    BEGIN { block = ""; link = ""; found_dpi = found_arch = found_type = printed = 0 }
+    /<a class="accent_color"/ {
+        if (printed) next
+        if (block != "" && link != "" && found_dpi && found_arch && found_type && !printed) { 
+            print link; printed = 1 
+        }
+        block = $0; found_dpi = found_arch = found_type = 0
+        if (match($0, /href="([^"]+)"/, arr)) link = arr[1]
+    }
+    { if (!printed) block = block "\n" $0 }
+    /table-cell/ && $0 ~ dpi { found_dpi = 1 }
+    /table-cell/ && $0 ~ arch { found_arch = 1 }
+    /apkm-badge/ && $0 ~ (">" type "</span>") { found_type = 1 }
+    END {
+        if (block != "" && link != "" && found_dpi && found_arch && found_type && !printed)
+            print link
+    }
+    '
+}
+
+# Get some versions of application on APKmirror pages 
+get_apkmirror_version() {
+    grep -oP 'class="fontBlack"[^>]*href="[^"]+"\s*>\K[^<]+' | sed 20q | awk '{print $NF}'
+}
+
+# Tải file APKM từ APKMirror theo cách của bạn
+apkmirror() {
     local name="hay-day"
     local org="supercell"
     local dpi=""
@@ -22,40 +60,40 @@ get_apkm_link() {
     local type="BUNDLE"
 
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
-    version="${version:-$(req - "$url" | get_latest_version)}"
+    version="${version:-$(req - "$url" | get_apkmirror_version | get_latest_version)}"
     url="https://www.apkmirror.com/apk/$org/$name/$name-${version//./-}-release"
-    url="https://www.apkmirror.com$(req - "$url" | awk -v type="$type" '/apkm-badge/ && $0 ~ (">" type "</span>") {getline; print $0}' | grep -oP 'href="\K[^"]+')"
+    url="https://www.apkmirror.com$(req - "$url" | extract_filtered_links "$dpi" "$arch" "$type")"
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'class="[^"]*downloadButton[^"]*"[^>]*href="\K[^"]+')"
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'id="download-link"[^>]*href="\K[^"]+')"
 
-    echo "$url"
+    req "hay-day.apkm" "$url"
 }
 
-# Tải file APKM mới nhất của Hay Day
+# Tải file APKM của Hay Day
 echo "[*] Đang tải Hay Day từ APKMirror..."
-APKM_FILE="hay-day.apkm"
-req "$APKM_FILE" "$(get_apkm_link)"
+apkmirror
 
 # Kiểm tra nếu tải không thành công
+APKM_FILE="hay-day.apkm"
 if [ ! -f "$APKM_FILE" ]; then
     echo "[!] Lỗi: Không thể tải file APKM!"
     exit 1
 fi
 echo "[✔] Tải thành công: $APKM_FILE"
 
-# Kiểm tra nếu bundletool chưa có thì tải về
+# Tải bundletool.jar từ link khả dụng
 BUNDLETOOL_JAR="bundletool.jar"
 if [ ! -f "$BUNDLETOOL_JAR" ]; then
     echo "[*] Đang tải bundletool..."
-    req "$BUNDLETOOL_JAR" "https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar"
+    req "$BUNDLETOOL_JAR" "https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar"
 fi
 
-# Bước 1: Giải nén file APKM
+# Giải nén file APKM
 EXTRACT_DIR="extracted_apkm"
 echo "[*] Giải nén $APKM_FILE..."
 unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; exit 1; }
 
-# Bước 2: Hợp nhất Split APKs thành một APK duy nhất
+# Hợp nhất Split APKs thành một APK duy nhất
 FINAL_APK="final.apk"
 SIGNED_APK="signed.apk"
 echo "[*] Hợp nhất Split APKs..."
@@ -63,7 +101,7 @@ java -jar "$BUNDLETOOL_JAR" build-apks --mode=universal --apks="$EXTRACT_DIR/bas
 unzip -o merged.apks -d final_apk
 mv final_apk/universal.apk "$FINAL_APK"
 
-# Bước 3: Kiểm tra chữ ký của APK
+# Kiểm tra chữ ký của APK
 echo "[*] Kiểm tra chữ ký APK..."
 if apksigner verify "$FINAL_APK"; then
     echo "[✔] APK đã có chữ ký hợp lệ."
