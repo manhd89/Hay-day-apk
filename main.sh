@@ -71,4 +71,4 @@ apkmirror() {
     req "$name-v$version.apkm" "$url"
 }
 
-apkmirror "hay-day" "supercell" "" "arm64-v8a" "bundle"
+apkmirror "hay-day" "supercell" "" "arm64-v8a" ""
