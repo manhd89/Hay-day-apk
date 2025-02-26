@@ -1,0 +1,37 @@
+name: Get APK
+on:
+  push:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    
+jobs:
+  build:
+    name: Get APK 
+    permissions: write-all
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@main  
+
+    - name: Get apk
+      run: bash main.sh
+
+    - name: Delete older releases
+      uses: dev-drprasad/delete-older-releases@v0.3.4
+      with:
+        keep_latest: 1
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+             
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        retain_days: 0
+        keep_minimum_runs: 1
