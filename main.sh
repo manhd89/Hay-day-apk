@@ -106,7 +106,7 @@ FINAL_APK="final.apk"
 SIGNED_APK="signed.apk"
 echo "[*] Hợp nhất Split APKs..."
 java -jar "$BUNDLETOOL_JAR" extract-apks \
-    --apks="$EXTRACT_DIR/base.apks" \
+    --apks="$EXTRACT_DIR/base.apk" \
     --output-dir="final_apk" \
     --device-spec=device-spec.json
 
