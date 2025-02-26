@@ -55,17 +55,19 @@ get_apkmirror_version() {
 
 # Best but sometimes not work because APKmirror protection 
 apkmirror() {
-    $1=$name
-    $2=$dpi
-    $3=$arch
-    $4=$type
+    local name="$1"
+    local dpi="$2"
+    local arch="$3"
+    local type="$4"
+
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
-    version="${version:-$(req - $url | get_apkmirror_version | get_latest_version)}"
+    version="${version:-$(req - "$url" | get_apkmirror_version | get_latest_version)}"
     url="https://www.apkmirror.com/apk/$org/$name/$name-${version//./-}-release"
     url="https://www.apkmirror.com$(req - "$url" | extract_filtered_links "$dpi" "$arch" "$type")"
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'class="[^"]*downloadButton[^"]*"[^>]*href="\K[^"]+')"
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'id="download-link"[^>]*href="\K[^"]+')"
-    req $name-v$version.apkm $url
+
+    req "$name-v$version.apkm" "$url"
 }
 
 apkmirror "hay-day" "" "arm64-v8a" "bundle"
