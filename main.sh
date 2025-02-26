@@ -81,41 +81,23 @@ if [ ! -f "$APKM_FILE" ]; then
 fi
 echo "[✔] Tải thành công: $APKM_FILE"
 
-# Tải bundletool.jar từ link khả dụng
-BUNDLETOOL_JAR="bundletool.jar"
-if [ ! -f "$BUNDLETOOL_JAR" ]; then
-    echo "[*] Đang tải bundletool..."
-    req "$BUNDLETOOL_JAR" "https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar"
-fi
-
 # Giải nén file APKM
 EXTRACT_DIR="extracted_apkm"
 echo "[*] Giải nén $APKM_FILE..."
 unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; exit 1; }
 
-# Tạo file device-spec.json
-echo '{
-  "supportedAbis": ["arm64-v8a"],
-  "supportedLocales": ["en"],
-  "screenDensity": 480,
-  "sdkVersion": 30
-}' > device-spec.json
+# Kiểm tra cấu trúc thư mục sau khi giải nén
+echo "[*] Kiểm tra cấu trúc thư mục sau khi giải nén..."
+ls -R "$EXTRACT_DIR"
 
-# Hợp nhất Split APKs thành một APK duy nhất bằng extract-apks
-FINAL_APK="final.apk"
-SIGNED_APK="signed.apk"
-echo "[*] Hợp nhất Split APKs..."
-java -jar "$BUNDLETOOL_JAR" extract-apks \
-    --apks="$EXTRACT_DIR/base.apk" \
-    --output-dir="final_apk" \
-    --device-spec=device-spec.json
-
-# Kiểm tra và di chuyển file APK
-if [ -f "final_apk/split_base_arm64_v8a.apk" ]; then
-    mv "final_apk/split_base_arm64_v8a.apk" "$FINAL_APK"
-    echo "[✔] APK đã được hợp nhất: $FINAL_APK"
+# Kiểm tra xem có file base.apk không
+if [ -f "$EXTRACT_DIR/base.apk" ]; then
+    FINAL_APK="final.apk"
+    SIGNED_APK="signed.apk"
+    mv "$EXTRACT_DIR/base.apk" "$FINAL_APK"
+    echo "[✔] Đã tìm thấy base.apk: $FINAL_APK"
 else
-    echo "[!] Lỗi: Không tìm thấy file APK sau khi hợp nhất."
+    echo "[!] Lỗi: Không tìm thấy base.apk sau khi giải nén."
     exit 1
 fi
 
