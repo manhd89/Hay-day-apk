@@ -93,30 +93,33 @@ EXTRACT_DIR="extracted_apkm"
 echo "[*] Giải nén $APKM_FILE..."
 unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; exit 1; }
 
-# Hợp nhất Split APKs thành một APK duy nhất
+# Hợp nhất Split APKs thành một APK duy nhất bằng extract-apks
 FINAL_APK="final.apk"
 SIGNED_APK="signed.apk"
 echo "[*] Hợp nhất Split APKs..."
-java -jar "$BUNDLETOOL_JAR" build-apks --mode=universal --apks="$EXTRACT_DIR/base.apks" --output="merged.apks"
-unzip -o merged.apks -d final_apk
-mv final_apk/universal.apk "$FINAL_APK"
+java -jar "$BUNDLETOOL_JAR" extract-apks --apks="$EXTRACT_DIR/base.apks" --output-dir="final_apk"
+mv final_apk/*.apk "$FINAL_APK"
 
 # Kiểm tra chữ ký của APK
-echo "[*] Kiểm tra chữ ký APK..."
-if apksigner verify "$FINAL_APK"; then
-    echo "[✔] APK đã có chữ ký hợp lệ."
-else
-    echo "[!] APK chưa có chữ ký, tiến hành ký..."
+if command -v apksigner &> /dev/null; then
+    echo "[*] Kiểm tra chữ ký APK..."
+    if apksigner verify "$FINAL_APK"; then
+        echo "[✔] APK đã có chữ ký hợp lệ."
+    else
+        echo "[!] APK chưa có chữ ký, tiến hành ký..."
 
-    # Tạo khóa keystore nếu chưa có
-    if [ ! -f "my-release-key.jks" ]; then
-        echo "[*] Tạo khóa ký APK..."
-        keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias mykeyalias -storepass password -keypass password -dname "CN=Android, OU=Dev, O=Company, L=City, S=State, C=US"
+        # Tạo khóa keystore nếu chưa có
+        if [ ! -f "my-release-key.jks" ]; then
+            echo "[*] Tạo khóa ký APK..."
+            keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias mykeyalias -storepass password -key-pass password -dname "CN=Android, OU=Dev, O=Company, L=City, S=State, C=US"
+        fi
+
+        # Ký APK
+        apksigner sign --ks my-release-key.jks --ks-key-alias mykeyalias --ks-pass pass:password --key-pass pass:password --out "$SIGNED_APK" "$FINAL_APK"
+        echo "[✔] APK đã được ký lại: $SIGNED_APK"
     fi
-
-    # Ký APK
-    apksigner sign --ks my-release-key.jks --ks-key-alias mykeyalias --ks-pass pass:password --key-pass pass:password --out "$SIGNED_APK" "$FINAL_APK"
-    echo "[✔] APK đã được ký lại: $SIGNED_APK"
+else
+    echo "[!] Không tìm thấy 'apksigner', bỏ qua bước kiểm tra chữ ký!"
 fi
 
 echo "[✔] Quá trình hoàn tất! File APK sẵn sàng để cài đặt."
