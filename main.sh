@@ -10,11 +10,11 @@ req() {
 
 # Find max version
 max() {
-	local max=0
-	while read -r v || [ -n "$v" ]; do
-		if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi
-	done
-	if [[ $max = 0 ]]; then echo ""; else echo "$max"; fi
+    local max=0
+    while read -r v || [ -n "$v" ]; do
+        if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi
+    done
+    if [[ $max = 0 ]]; then echo ""; else echo "$max"; fi
 }
 
 # Get largest version (Just compatible with my way of getting versions code)
@@ -93,12 +93,31 @@ EXTRACT_DIR="extracted_apkm"
 echo "[*] Giải nén $APKM_FILE..."
 unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; exit 1; }
 
+# Tạo file device-spec.json
+echo '{
+  "supportedAbis": ["arm64-v8a"],
+  "supportedLocales": ["en"],
+  "screenDensity": 480,
+  "sdkVersion": 30
+}' > device-spec.json
+
 # Hợp nhất Split APKs thành một APK duy nhất bằng extract-apks
 FINAL_APK="final.apk"
 SIGNED_APK="signed.apk"
 echo "[*] Hợp nhất Split APKs..."
-java -jar "$BUNDLETOOL_JAR" extract-apks --apks="$EXTRACT_DIR/base.apks" --output-dir="final_apk"
-mv final_apk/*.apk "$FINAL_APK"
+java -jar "$BUNDLETOOL_JAR" extract-apks \
+    --apks="$EXTRACT_DIR/base.apks" \
+    --output-dir="final_apk" \
+    --device-spec=device-spec.json
+
+# Kiểm tra và di chuyển file APK
+if [ -f "final_apk/split_base_arm64_v8a.apk" ]; then
+    mv "final_apk/split_base_arm64_v8a.apk" "$FINAL_APK"
+    echo "[✔] APK đã được hợp nhất: $FINAL_APK"
+else
+    echo "[!] Lỗi: Không tìm thấy file APK sau khi hợp nhất."
+    exit 1
+fi
 
 # Kiểm tra chữ ký của APK
 if command -v apksigner &> /dev/null; then
