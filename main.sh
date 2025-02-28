@@ -101,6 +101,8 @@ else
     exit 1
 fi
 
+apksigner=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner -type f | sort -r | head -n 1)
+
 # Kiểm tra chữ ký của APK
 if command -v apksigner &> /dev/null; then
     echo "[*] Kiểm tra chữ ký APK..."
