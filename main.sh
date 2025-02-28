@@ -113,24 +113,11 @@ if [[ -z "$APKSIGNER" ]]; then
     exit 1
 fi
 
-# Kiểm tra chữ ký của APK
-echo "[*] Kiểm tra chữ ký APK..."
-if "$APKSIGNER" verify "$FINAL_APK"; then
-    echo "[✔] APK đã có chữ ký hợp lệ."
-else
-    echo "[!] APK chưa có chữ ký, tiến hành ký..."
+# Luôn ký lại APK
+echo "[*] Ký lại APK..."
 
-    # Tạo khóa keystore nếu chưa có
-    if [ ! -f "my-release-key.jks" ]; then
-        echo "[*] Tạo khóa ký APK..."
-        keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias mykeyalias -storepass password -keypass password \
-            -dname "CN=Android, OU=Dev, O=Company, L=City, S=State, C=US"
-    fi
+# Ký APK
+"$APKSIGNER" sign --ks public.jks --ks-key-alias public \
+    --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" "$FINAL_APK"
 
-    # Ký APK
-    "$APKSIGNER" sign --ks my-release-key.jks --ks-key-alias mykeyalias \
-        --ks-pass pass:password --key-pass pass:password --out "$SIGNED_APK" "$FINAL_APK"
-
-    echo "[✔] APK đã được ký lại: $SIGNED_APK"
-fi
+echo "[✔] APK đã được ký lại: $SIGNED_APK"
