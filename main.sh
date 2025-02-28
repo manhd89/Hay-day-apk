@@ -90,16 +90,8 @@ unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; 
 echo "[*] Kiểm tra cấu trúc thư mục sau khi giải nén..."
 ls -R "$EXTRACT_DIR"
 
-# Kiểm tra xem có file base.apk không
-if [ -f "$EXTRACT_DIR/base.apk" ]; then
-    FINAL_APK="final.apk"
-    SIGNED_APK="signed.apk"
-    mv "$EXTRACT_DIR/base.apk" "$FINAL_APK"
-    echo "[✔] Đã tìm thấy base.apk: $FINAL_APK"
-else
-    echo "[!] Lỗi: Không tìm thấy base.apk sau khi giải nén."
-    exit 1
-fi
+req APKEditor.jar https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar
+java -jar APKEditor.jar --verbose m -i "$EXTRACT_DIR" 
 
 # Xác định apksigner
 if ! command -v apksigner &> /dev/null; then
