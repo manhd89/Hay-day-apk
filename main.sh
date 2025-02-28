@@ -91,7 +91,7 @@ echo "[*] Kiểm tra cấu trúc thư mục sau khi giải nén..."
 ls -R "$EXTRACT_DIR"
 
 req APKEditor.jar https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar
-java -jar APKEditor.jar --verbose m -i "$EXTRACT_DIR" 
+java -jar APKEditor.jar m -i "$EXTRACT_DIR" 
 
 # Xác định apksigner
 if ! command -v apksigner &> /dev/null; then
