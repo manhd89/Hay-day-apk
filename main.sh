@@ -2,29 +2,27 @@
 
 # Hàm gửi request giả lập như Firefox Android
 req() {
-    local output_file="$1"
-    local url="$2"
     wget --header="User-Agent: Mozilla/5.0 (Android 13; Mobile; rv:125.0) Gecko/125.0 Firefox/125.0" \
          --header="Accept-Language: en-US,en;q=0.9" \
          --header="Connection: keep-alive" \
-         --timeout=30 -nv -O "$output_file" "$url"
+         --timeout=30 -nv -O "$@"
 }
 
-# Tìm phiên bản lớn nhất
+# Find max version
 max() {
-    local max_version=""
-    while read -r v; do
-        [[ -z "$max_version" || ${v//[!0-9]/} -gt ${max_version//[!0-9]/} ]] && max_version="$v"
+    local max=0
+    while read -r v || [ -n "$v" ]; do
+        if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi
     done
-    echo "$max_version"
+    if [[ $max = 0 ]]; then echo ""; else echo "$max"; fi
 }
 
-# Lấy phiên bản mới nhất từ danh sách
+# Get largest version (Just compatible with my way of getting versions code)
 get_latest_version() {
-    grep -Evi 'alpha|beta' | grep -oP '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
+    grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
 }
 
-# Trích xuất link tải APK từ HTML
+# Filtered key words to extract link
 extract_filtered_links() {
     local dpi="$1" arch="$2" type="$3"
     awk -v dpi="$dpi" -v arch="$arch" -v type="$type" '
@@ -48,12 +46,12 @@ extract_filtered_links() {
     '
 }
 
-# Lấy danh sách phiên bản từ APKMirror
+# Get some versions of application on APKmirror pages 
 get_apkmirror_version() {
     grep -oP 'class="fontBlack"[^>]*href="[^"]+"\s*>\K[^<]+' | sed 20q | awk '{print $NF}'
 }
 
-# Tải file APKM từ APKMirror
+# Tải file APKM từ APKMirror theo cách của bạn
 apkmirror() {
     local name="hay-day"
     local org="supercell"
@@ -61,26 +59,12 @@ apkmirror() {
     local arch="arm64-v8a"
     local type="BUNDLE"
 
-    local url="https://www.apkmirror.com/uploads/?appcategory=$name"
-    local version
-    version="$(req - - "$url" | get_apkmirror_version | get_latest_version)"
-    if [[ -z "$version" ]]; then
-        echo "[!] Không tìm thấy phiên bản hợp lệ!"
-        exit 1
-    fi
-
+    url="https://www.apkmirror.com/uploads/?appcategory=$name"
+    version="${version:-$(req - "$url" | get_apkmirror_version | get_latest_version)}"
     url="https://www.apkmirror.com/apk/$org/$name/$name-${version//./-}-release"
-    local download_page
-    download_page="$(req - - "$url" | extract_filtered_links "$dpi" "$arch" "$type")"
-
-    if [[ -z "$download_page" ]]; then
-        echo "[!] Không tìm thấy link tải!"
-        exit 1
-    fi
-
-    url="https://www.apkmirror.com$download_page"
-    url="https://www.apkmirror.com$(req - - "$url" | grep -oP 'class="[^"]*downloadButton[^"]*"[^>]*href="\K[^"]+')"
-    url="https://www.apkmirror.com$(req - - "$url" | grep -oP 'id="download-link"[^>]*href="\K[^"]+')"
+    url="https://www.apkmirror.com$(req - "$url" | extract_filtered_links "$dpi" "$arch" "$type")"
+    url="https://www.apkmirror.com$(req - "$url" | grep -oP 'class="[^"]*downloadButton[^"]*"[^>]*href="\K[^"]+')"
+    url="https://www.apkmirror.com$(req - "$url" | grep -oP 'id="download-link"[^>]*href="\K[^"]+')"
 
     req "hay-day.apkm" "$url"
 }
@@ -118,31 +102,35 @@ else
 fi
 
 # Xác định apksigner
-APKSIGNER=$(command -v apksigner)
-if [[ -z "$APKSIGNER" ]]; then
+if ! command -v apksigner &> /dev/null; then
     APKSIGNER=$(find "${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/build-tools" -name apksigner -type f | sort -r | head -n 1)
+else
+    APKSIGNER="apksigner"
+fi
+
+if [[ -z "$APKSIGNER" ]]; then
+    echo "[!] Không tìm thấy 'apksigner'. Vui lòng cài đặt Android SDK Build-Tools!"
+    exit 1
 fi
 
 # Kiểm tra chữ ký của APK
-if [[ -n "$APKSIGNER" ]]; then
-    echo "[*] Kiểm tra chữ ký APK..."
-    if "$APKSIGNER" verify "$FINAL_APK"; then
-        echo "[✔] APK đã có chữ ký hợp lệ."
-    else
-        echo "[!] APK chưa có chữ ký, tiến hành ký..."
-
-        # Tạo khóa keystore nếu chưa có
-        if [ ! -f "my-release-key.jks" ]; then
-            echo "[*] Tạo khóa ký APK..."
-            keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias mykeyalias -storepass password -key-pass password -dname "CN=Android, OU=Dev, O=Company, L=City, S=State, C=US"
-        fi
-
-        # Ký APK
-        "$APKSIGNER" sign --ks my-release-key.jks --ks-key-alias mykeyalias --ks-pass pass:password --key-pass pass:password --out "$SIGNED_APK" "$FINAL_APK"
-        echo "[✔] APK đã được ký lại: $SIGNED_APK"
-    fi
+echo "[*] Kiểm tra chữ ký APK..."
+if "$APKSIGNER" verify "$FINAL_APK"; then
+    echo "[✔] APK đã có chữ ký hợp lệ."
 else
-    echo "[!] Không tìm thấy 'apksigner', bỏ qua bước kiểm tra chữ ký!"
-fi
+    echo "[!] APK chưa có chữ ký, tiến hành ký..."
 
-echo "[✔] Quá trình hoàn tất! File APK sẵn sàng để cài đặt."
+    # Tạo khóa keystore nếu chưa có
+    if [ ! -f "my-release-key.jks" ]; then
+        echo "[*] Tạo khóa ký APK..."
+        keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias mykeyalias -storepass password -keypass password \
+            -dname "CN=Android, OU=Dev, O=Company, L=City, S=State, C=US"
+    fi
+
+    # Ký APK
+    "$APKSIGNER" sign --ks my-release-key.jks --ks-key-alias mykeyalias \
+        --ks-pass pass:password --key-pass pass:password --out "$SIGNED_APK" "$FINAL_APK"
+
+    echo "[✔] APK đã được ký lại: $SIGNED_APK"
+fi
