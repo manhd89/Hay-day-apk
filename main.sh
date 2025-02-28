@@ -91,7 +91,7 @@ echo "[*] Kiểm tra cấu trúc thư mục sau khi giải nén..."
 ls -R "$EXTRACT_DIR"
 
 req APKEditor.jar https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar
-java -jar APKEditor.jar m -i "$EXTRACT_DIR" 
+java -jar APKEditor.jar m -i "$EXTRACT_DIR" 2>&1
 
 # Xác định apksigner
 if ! command -v apksigner &> /dev/null; then
@@ -110,6 +110,6 @@ echo "[*] Ký lại APK..."
 
 # Ký APK
 "$APKSIGNER" sign --ks public.jks --ks-key-alias public \
-    --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" "$FINAL_APK"
+    --ks-pass pass:public --key-pass pass:public --out signed.apk extracted_apkm_merged.apk
 
 echo "[✔] APK đã được ký lại: $SIGNED_APK"
