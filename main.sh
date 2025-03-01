@@ -66,7 +66,7 @@ apkmirror() {
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'class="[^"]*downloadButton[^"]*"[^>]*href="\K[^"]+')"
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'id="download-link"[^>]*href="\K[^"]+')"
 
-    req "hay-day.apkm" "$url"
+    req "hay-day.apk" "$url"
 }
 
 # Tải file APKM của Hay Day
@@ -74,7 +74,7 @@ echo "[*] Đang tải Hay Day từ APKMirror..."
 apkmirror
 
 # Kiểm tra nếu tải không thành công
-APKM_FILE="hay-day.apkm"
+APKM_FILE="hay-day.apk"
 if [ ! -f "$APKM_FILE" ]; then
     echo "[!] Lỗi: Không thể tải file APKM!"
     exit 1
