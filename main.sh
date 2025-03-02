@@ -57,7 +57,7 @@ apkmirror() {
     local org="google-inc"
     local dpi="nodpi"
     local arch=""
-    local type=""
+    local type="APK"
 
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
     version="${version:-$(req - "$url" | get_apkmirror_version | get_latest_version)}"
