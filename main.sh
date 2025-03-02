@@ -55,8 +55,8 @@ get_apkmirror_version() {
 apkmirror() {
     local name="youtube"
     local org="google-inc"
-    local dpi=""
-    local arch="universal"
+    local dpi="nodpi"
+    local arch=""
     local type=""
 
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
