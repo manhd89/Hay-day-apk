@@ -53,11 +53,11 @@ get_apkmirror_version() {
 
 # Tải file APKM từ APKMirror theo cách của bạn
 apkmirror() {
-    local name="hay-day"
-    local org="supercell"
+    local name="youtube"
+    local org="google-inc"
     local dpi=""
-    local arch="arm64-v8a"
-    local type="BUNDLE"
+    local arch="universal"
+    local type=""
 
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
     version="${version:-$(req - "$url" | get_apkmirror_version | get_latest_version)}"
