@@ -66,7 +66,7 @@ apkmirror() {
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'class="[^"]*downloadButton[^"]*"[^>]*href="\K[^"]+')"
     url="https://www.apkmirror.com$(req - "$url" | grep -oP 'id="download-link"[^>]*href="\K[^"]+')"
 
-    req "hay-day.apk" "$url"
+    req "hay-day-v$version.apk" "$url"
 }
 
 # Tải file APKM của Hay Day
@@ -74,7 +74,7 @@ echo "[*] Đang tải Hay Day từ APKMirror..."
 apkmirror
 
 # Kiểm tra nếu tải không thành công
-APKM_FILE="hay-day.apk"
+APKM_FILE="hay-day-v$version.apk"
 if [ ! -f "$APKM_FILE" ]; then
     echo "[!] Lỗi: Không thể tải file APKM!"
     exit 1
@@ -91,7 +91,7 @@ echo "[*] Kiểm tra cấu trúc thư mục sau khi giải nén..."
 ls -R "$EXTRACT_DIR"
 
 req APKEditor.jar https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar
-java -jar APKEditor.jar m -i "$EXTRACT_DIR" 2>&1
+java -jar APKEditor.jar m -i "$EXTRACT_DIR" hay-day-v$version.apk >/dev/null
 
 # Xác định apksigner
 if ! command -v apksigner &> /dev/null; then
@@ -110,6 +110,6 @@ echo "[*] Ký lại APK..."
 
 # Ký APK
 "$APKSIGNER" sign --ks public.jks --ks-key-alias public \
-    --ks-pass pass:public --key-pass pass:public --out signed.apk extracted_apkm_merged.apk
+    --ks-pass pass:public --key-pass pass:public --out signed.apk hay-day-v$version.apk
 
 echo "[✔] APK đã được ký lại: $SIGNED_APK"
