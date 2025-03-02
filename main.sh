@@ -86,6 +86,8 @@ EXTRACT_DIR="extracted_apkm"
 echo "[*] Giải nén $APKM_FILE..."
 unzip -o "$APKM_FILE" -d "$EXTRACT_DIR" || { echo "[!] Lỗi khi giải nén."; exit 1; }
 
+rm hay-day-v$version.apk
+
 # Kiểm tra cấu trúc thư mục sau khi giải nén
 echo "[*] Kiểm tra cấu trúc thư mục sau khi giải nén..."
 ls -R "$EXTRACT_DIR"
