@@ -53,10 +53,10 @@ get_apkmirror_version() {
 
 # Tải file APKM từ APKMirror theo cách của bạn
 apkmirror() {
-    local name="hay-day"
-    local org="supercell"
+    local name="reddit"
+    local org="redditinc"
     local dpi=""
-    local arch="arm64-v8a"
+    local arch="universal"
     local type="BUNDLE"
 
     url="https://www.apkmirror.com/uploads/?appcategory=$name"
