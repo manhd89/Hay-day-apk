@@ -45,6 +45,12 @@ apkpure() {
     APKM_FILE=$(get_latest_download)
     [[ -z "$APKM_FILE" ]] && { echo "[!] Lỗi: Không thể tải file APK!"; exit 1; }
 
+    # Đổi tên file theo định dạng yêu cầu
+    local ext="${APKM_FILE##*.}"
+    local new_name="Spotify_Music_and_Podcasts_${version}_APKPure.${ext}"
+    mv -f "$APKM_FILE" "$new_name"
+    APKM_FILE="$new_name"
+
     echo "[✔] Tải thành công: $APKM_FILE"
 }
 
