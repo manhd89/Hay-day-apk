@@ -12,6 +12,18 @@ req() {
          --keep-session-cookies --timeout=30 -nv ${2:+-O "$2"} --content-disposition "$1"
 }
 
+# Function to download necessary resources from GitHub
+download_github() {
+    name=$1
+    repo=$2
+    local github_api_url="https://api.github.com/repos/$name/$repo/releases/latest"
+    local page=$(http_request - 2>/dev/null "$github_api_url")
+    local asset_urls=$(echo "$page" | jq -r '.assets[] | select(.name | endswith(".asc") | not) | "\(.browser_download_url) \(.name)"')
+    while read -r download_url asset_name; do
+        req "$download_url" "$asset_name"
+    done <<< "$asset_urls"
+}
+
 # Tìm phiên bản lớn nhất
 max() {
     local max=0
@@ -66,6 +78,9 @@ apkpure() {
     exit 1
 }
 
+download_github "revanced" "revanced-patches"
+download_github "revanced" "revanced-cli"
+
 # Lấy APK từ apkpure
 APKM_FILE=$(apkpure)
 echo "File APK đã tải về: $APKM_FILE"
@@ -94,6 +109,9 @@ if [[ "$APKM_FILE" == *.xapk ]]; then
     # Sử dụng APKEditor để merge file
     java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE"
 
+    java -jar revanced-cli*.jar patch --patches patches*.rvp --out "patched-spotify-v$version.apk" \
+        "*_merged.apk"
+
     # Xác định apksigner
     if ! command -v apksigner &> /dev/null; then
         APKSIGNER=$(find "${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/build-tools" -name apksigner -type f | sort -r | head -n 1)
@@ -109,15 +127,9 @@ if [[ "$APKM_FILE" == *.xapk ]]; then
     # Ký lại APK
     echo "[*] Ký lại APK..."
     SIGNED_APK="signed.apk"
-    MERGED_APK=$(ls *_merged.apk 2>/dev/null | head -n 1)
-
-    if [[ -z "$MERGED_APK" ]]; then
-        echo "[!] Lỗi: Không tìm thấy file '_merged.apk' để ký!"
-        exit 1
-    fi
 
     "$APKSIGNER" sign --ks public.jks --ks-key-alias public \
-        --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" "$MERGED_APK"
+        --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" patched-spotify-v$version.apk
 
     echo "[✔] APK đã được ký lại: $SIGNED_APK"
 else
