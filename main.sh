@@ -69,8 +69,6 @@ apkpure() {
 APKM_FILE=$(apkpure)
 echo "File APK đã tải về: $APKM_FILE"
 
-exit
-
 # Kiểm tra nếu APK tải về không thành công
 if [[ ! -f "$APKM_FILE" ]]; then
     echo "[!] Lỗi: Không tải được APK!"
