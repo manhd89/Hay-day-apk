@@ -44,6 +44,8 @@ apkpure() {
 
     APKM_FILE=$(get_latest_download)
     [[ -z "$APKM_FILE" ]] && { echo "[!] Lỗi: Không thể tải file APK!"; exit 1; }
+    echo $APKM_FILE
+    exit
 
     # Sửa phần đổi tên file
     local safe_name="Spotify"  # Thay thế dấu ':' bằng khoảng trắng
