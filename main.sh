@@ -45,9 +45,8 @@ apkpure() {
     package="com.spotify.music"
     url="https://apkpure.net/$name/$package/versions"
 
-    version="9.0.34.4"
-    #version=$(req "$url" - | grep -oP 'data-dt-version="\K[^"]*' | sed 10q | get_latest_version)
-    #[[ -z "$version" ]] && { echo "[!] Không tìm thấy phiên bản hợp lệ!"; exit 1; }
+    version=$(req "$url" - | grep -oP 'data-dt-version="\K[^"]*' | sed 10q | get_latest_version)
+    [[ -z "$version" ]] && { echo "[!] Không tìm thấy phiên bản hợp lệ!"; exit 1; }
 
     url="https://apkpure.net/$name/$package/download/$version"
     download_link=$(req "$url" - | grep -oP '<a[^>]*id="download_link"[^>]*href="\K[^"]*' | head -n 1)
