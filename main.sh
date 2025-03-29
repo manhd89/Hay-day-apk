@@ -26,11 +26,6 @@ get_latest_version() {
     grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
 }
 
-# Lấy file tải xuống cuối cùng
-get_latest_download() {
-    find . -maxdepth 1 -type f -name "*.apk" -printf "%T@ %p\n" | sort -nr | awk '{print $2; exit}'
-}
-
 apkpure() {
     name="spotify-music-and-podcasts-for-android"
     package="com.spotify.music"
