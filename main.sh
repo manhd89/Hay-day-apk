@@ -44,23 +44,25 @@ apkpure() {
         exit 1
     fi
 
-    # Tạo thư mục tạm để tránh trùng tên file
-    temp_dir=$(mktemp -d)
-    
-    # Tải file về thư mục tạm
-    req "$download_link" -P "$temp_dir"
+    # Lấy danh sách file trước khi tải
+    before_download=(*)
 
-    # Lấy tên file thực tế vừa tải xuống
-    filename=$(ls -t "$temp_dir" | head -n 1)
+    # Tải file về thư mục hiện tại, không đặt tên tùy chỉnh
+    req "$download_link"
 
-    # Di chuyển file về thư mục hiện tại
-    mv "$temp_dir/$filename" .
+    # Lấy danh sách file sau khi tải
+    after_download=(*)
 
-    # Xóa thư mục tạm
-    rmdir "$temp_dir"
+    # Tìm file mới xuất hiện bằng cách so sánh danh sách trước & sau
+    for file in "${after_download[@]}"; do
+        if [[ ! " ${before_download[@]} " =~ " $file " ]]; then
+            echo "$file"
+            return
+        fi
+    done
 
-    # Trả về tên file
-    echo "$filename"
+    echo "[!] Lỗi: Không xác định được tên file!"
+    exit 1
 }
 
 # Lấy APK từ apkpure
