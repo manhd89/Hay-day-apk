@@ -38,19 +38,34 @@ apkpure() {
 
     url="https://apkpure.net/$name/$package/download/$version"
     download_link=$(req "$url" - | grep -oP '<a[^>]*id="download_link"[^>]*href="\K[^"]*' | head -n 1)
-    
+
     if [[ -z "$download_link" ]]; then
         echo "[!] Không lấy được link tải xuống!"
         exit 1
     fi
 
-    req "$download_link"
+    # Tạo thư mục tạm để tránh trùng tên file
+    temp_dir=$(mktemp -d)
+    
+    # Tải file về thư mục tạm
+    req "$download_link" -P "$temp_dir"
+
+    # Lấy tên file thực tế vừa tải xuống
+    filename=$(ls -t "$temp_dir" | head -n 1)
+
+    # Di chuyển file về thư mục hiện tại
+    mv "$temp_dir/$filename" .
+
+    # Xóa thư mục tạm
+    rmdir "$temp_dir"
+
+    # Trả về tên file
+    echo "$filename"
 }
 
 # Lấy APK từ apkpure
 APKM_FILE=$(apkpure)
-
-echo $APKM_FILE
+echo "File APK đã tải về: $APKM_FILE"
 
 exit
 
