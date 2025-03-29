@@ -28,7 +28,7 @@ get_latest_version() {
 
 # Lấy file tải xuống cuối cùng
 get_latest_download() {
-    find . -maxdepth 1 -type f \( -iname "*.apk" -o -iname "*.xapk" \) -printf "%T@ %p\n" | sort -nr | awk 'NR==1{print $2}'
+    find . -maxdepth 1 -type f -name "Spotify*" -printf "%T@ %p\n" | sort -nr | awk '{print $2; exit}'
 }
 
 apkpure() {
@@ -44,18 +44,6 @@ apkpure() {
 
     APKM_FILE=$(get_latest_download)
     [[ -z "$APKM_FILE" ]] && { echo "[!] Lỗi: Không thể tải file APK!"; exit 1; }
-    echo $APKM_FILE
-    exit
-
-    # Sửa phần đổi tên file
-    local safe_name="Spotify"  # Thay thế dấu ':' bằng khoảng trắng
-    local ext="${APKM_FILE##*.}"
-    local new_name="${safe_name}_${version}_APKPure.${ext}"
-    
-    # Xử lý đường dẫn tuyệt đối
-    new_name="${new_name//\//_}"  # Thay thế slash bằng gạch dưới
-    mv -f "./$APKM_FILE" "./$new_name" 2>/dev/null || mv -f "$APKM_FILE" "./$new_name"
-    APKM_FILE="./$new_name"
 
     echo "[✔] Tải thành công: $APKM_FILE"
 }
