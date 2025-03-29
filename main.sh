@@ -26,9 +26,8 @@ get_latest_version() {
     grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
 }
 
-# Lấy file tải xuống cuối cùng
 get_latest_download() {
-    find . -maxdepth 1 -type f -name "Spotify*" -printf "%T@ %p\n" | sort -nr | awk '{print $2; exit}'
+    find . -maxdepth 1 -type f -printf "%T@ %p\0" | sort -nrz | head -zn1 | cut -zf2- | xargs -0 -I{} realpath {}
 }
 
 apkpure() {
