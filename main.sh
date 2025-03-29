@@ -50,6 +50,10 @@ apkpure() {
 # Lấy APK từ apkpure
 APKM_FILE=$(apkpure)
 
+echo $APKM_FILE
+
+exit
+
 # Kiểm tra nếu APK tải về không thành công
 if [[ ! -f "$APKM_FILE" ]]; then
     echo "[!] Lỗi: Không tải được APK!"
