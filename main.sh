@@ -75,43 +75,50 @@ if [[ ! -f "$APKM_FILE" ]]; then
     exit 1
 fi
 
-# Tải APKEditor
-APK_EDITOR_URL="https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar"
-APK_EDITOR_JAR="APKEditor.jar"
+# Kiểm tra nếu tệp tải về là file .xapk mới chạy merge
+if [[ "$APKM_FILE" == *.xapk ]]; then
+    echo "[*] File tải về là .xapk, tiến hành merge file..."
+    
+    # Tải APKEditor
+    APK_EDITOR_URL="https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar"
+    APK_EDITOR_JAR="APKEditor.jar"
 
-req "$APK_EDITOR_URL" "$APK_EDITOR_JAR"
+    req "$APK_EDITOR_URL" "$APK_EDITOR_JAR"
 
-if [[ ! -f "$APK_EDITOR_JAR" ]]; then
-    echo "[!] Lỗi: Không tải được APKEditor!"
-    exit 1
-fi
+    if [[ ! -f "$APK_EDITOR_JAR" ]]; then
+        echo "[!] Lỗi: Không tải được APKEditor!"
+        exit 1
+    fi
 
-# Sử dụng APKEditor để chỉnh sửa APK
-java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE"
+    # Sử dụng APKEditor để merge file
+    java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE"
 
-# Xác định apksigner
-if ! command -v apksigner &> /dev/null; then
-    APKSIGNER=$(find "${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/build-tools" -name apksigner -type f | sort -r | head -n 1)
+    # Xác định apksigner
+    if ! command -v apksigner &> /dev/null; then
+        APKSIGNER=$(find "${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/build-tools" -name apksigner -type f | sort -r | head -n 1)
+    else
+        APKSIGNER="apksigner"
+    fi
+
+    if [[ -z "$APKSIGNER" ]]; then
+        echo "[!] Không tìm thấy 'apksigner'. Vui lòng cài đặt Android SDK Build-Tools!"
+        exit 1
+    fi
+
+    # Ký lại APK
+    echo "[*] Ký lại APK..."
+    SIGNED_APK="signed.apk"
+    MERGED_APK=$(ls *_merged.apk 2>/dev/null | head -n 1)
+
+    if [[ -z "$MERGED_APK" ]]; then
+        echo "[!] Lỗi: Không tìm thấy file '_merged.apk' để ký!"
+        exit 1
+    fi
+
+    "$APKSIGNER" sign --ks public.jks --ks-key-alias public \
+        --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" "$MERGED_APK"
+
+    echo "[✔] APK đã được ký lại: $SIGNED_APK"
 else
-    APKSIGNER="apksigner"
+    echo "[*] File tải về không phải .xapk, không cần merge."
 fi
-
-if [[ -z "$APKSIGNER" ]]; then
-    echo "[!] Không tìm thấy 'apksigner'. Vui lòng cài đặt Android SDK Build-Tools!"
-    exit 1
-fi
-
-# Ký lại APK
-echo "[*] Ký lại APK..."
-SIGNED_APK="signed.apk"
-MERGED_APK=$(ls *_merged.apk 2>/dev/null | head -n 1)
-
-if [[ -z "$MERGED_APK" ]]; then
-    echo "[!] Lỗi: Không tìm thấy file '_merged.apk' để ký!"
-    exit 1
-fi
-
-"$APKSIGNER" sign --ks public.jks --ks-key-alias public \
-    --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" "$MERGED_APK"
-
-echo "[✔] APK đã được ký lại: $SIGNED_APK"
