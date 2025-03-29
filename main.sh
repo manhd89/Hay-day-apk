@@ -109,7 +109,7 @@ if [[ "$APKM_FILE" == *.xapk ]]; then
     # Sử dụng APKEditor để merge file
     java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE" 2>/dev/null
 
-    java -jar revanced-cli*.jar patch --patches patches*.rvp --out "patched-spotify-v$version.apk" "*_merged.apk"
+    java -jar revanced-cli*.jar patch --patches patches*.rvp --out "patched-spotify-v$version.apk" *_merged.apk
 
     # Xác định apksigner
     if ! command -v apksigner &> /dev/null; then
