@@ -26,8 +26,9 @@ get_latest_version() {
     grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
 }
 
+# Lấy file tải xuống cuối cùng
 get_latest_download() {
-    find . -maxdepth 1 -type f -printf "%T@ %p\0" | sort -nrz | head -zn1 | cut -zf2- | xargs -0 -I{} realpath {}
+    find . -maxdepth 1 -type f -name "*.apk" -printf "%T@ %p\n" | sort -nr | awk '{print $2; exit}'
 }
 
 apkpure() {
@@ -40,14 +41,9 @@ apkpure() {
     
     download_link=$(req "$url" - | grep -oP '<a[^>]*id="download_link"[^>]*href="\K[^"]*' | head -n 1)
     req "$download_link"
-
-    APKM_FILE=$(get_latest_download)
-    [[ -z "$APKM_FILE" ]] && { echo "[!] Lỗi: Không thể tải file APK!"; exit 1; }
-
-    echo "[✔] Tải thành công: $APKM_FILE"
 }
 
-apkpure
+APKM_FILE=$apkpure
 
 # Tải APKEditor
 req "https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar" "APKEditor.jar"
