@@ -28,7 +28,7 @@ get_latest_version() {
 
 # Lấy file tải xuống cuối cùng
 get_latest_download() {
-    find . -maxdepth 1 -type f -name "*.apk" -printf "%T@ %p\n" | sort -nr | awk '{print $2; exit}'
+    find . -maxdepth 1 -type f \( -iname "*.apk" -o -iname "*.xapk" \) -printf "%T@ %p\n" | sort -nr | awk 'NR==1{print $2}'
 }
 
 apkpure() {
