@@ -45,11 +45,15 @@ apkpure() {
     APKM_FILE=$(get_latest_download)
     [[ -z "$APKM_FILE" ]] && { echo "[!] Lỗi: Không thể tải file APK!"; exit 1; }
 
-    # Đổi tên file theo định dạng yêu cầu
+    # Sửa phần đổi tên file
+    local safe_name="Spotify Music and Podcasts"  # Thay thế dấu ':' bằng khoảng trắng
     local ext="${APKM_FILE##*.}"
-    local new_name="Spotify_Music_and_Podcasts_${version}_APKPure.${ext}"
-    mv -f "$APKM_FILE" "$new_name"
-    APKM_FILE="$new_name"
+    local new_name="${safe_name}_${version}_APKPure.${ext}"
+    
+    # Xử lý đường dẫn tuyệt đối
+    new_name="${new_name//\//_}"  # Thay thế slash bằng gạch dưới
+    mv -f "./$APKM_FILE" "./$new_name" 2>/dev/null || mv -f "$APKM_FILE" "./$new_name"
+    APKM_FILE="./$new_name"
 
     echo "[✔] Tải thành công: $APKM_FILE"
 }
