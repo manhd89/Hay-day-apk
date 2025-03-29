@@ -13,7 +13,7 @@ req() { wget --header="User-Agent: Mozilla/5.0 (Android 13; Mobile; rv:125.0) Ge
 
 Tìm phiên bản lớn nhất
 
-max() { local max=0 while read -r v || [ -n "$v" ]; do if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi done [[ $max = 0 ]] && echo "" || echo "$max" }
+max() { local max=0 while read -r v || [ -n "$v" ]; do if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi done [[ $max = 0 ]] && echo "" || echo "$max" };
 
 Lấy phiên bản mới nhất
 
