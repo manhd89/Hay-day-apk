@@ -37,7 +37,7 @@ echo "[*] Đang tải Hay Day từ APKMirror..."
 apkpure
 
 # Kiểm tra nếu tải không thành công
-APKM_FILE="spotify-v$version.apkm"
+APKM_FILE="$name-v$version.apk"
 if [ ! -f "$APKM_FILE" ]; then
     echo "[!] Lỗi: Không thể tải file APKM!"
     exit 1
