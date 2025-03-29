@@ -16,14 +16,16 @@ req() {
 max() {
     local max=0
     while read -r v || [ -n "$v" ]; do
-        if [[ ${v//[!0-9]/} -gt ${max//[!0-9]/} ]]; then max=$v; fi
+        num_ver=$(echo "$v" | grep -o '[0-9]\+' | paste -sd '')
+        num_max=$(echo "$max" | grep -o '[0-9]\+' | paste -sd '')
+        if [[ "$num_ver" -gt "$num_max" ]]; then max="$v"; fi
     done
     [[ $max = 0 ]] && echo "" || echo "$max"
 }
 
 # Lấy phiên bản mới nhất
 get_latest_version() {
-    grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:\-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
+    grep -Evi 'alpha|beta' | grep -oPi '\b\d+(\.\d+)+(?:-\w+)?(?:\.\d+)?(?:\.\w+)?\b' | max
 }
 
 apkpure() {
@@ -31,18 +33,42 @@ apkpure() {
     package="com.spotify.music"
     url="https://apkpure.net/$name/$package/versions"
 
-    version="${version:-$(req "$url" - | grep -oP 'data-dt-version="\K[^"]*' | sed 10q | get_latest_version)}"
+    version=$(req "$url" - | grep -oP 'data-dt-version="\K[^"]*' | sed 10q | get_latest_version)
+    [[ -z "$version" ]] && { echo "[!] Không tìm thấy phiên bản hợp lệ!"; exit 1; }
+
     url="https://apkpure.net/$name/$package/download/$version"
-    
     download_link=$(req "$url" - | grep -oP '<a[^>]*id="download_link"[^>]*href="\K[^"]*' | head -n 1)
+    
+    if [[ -z "$download_link" ]]; then
+        echo "[!] Không lấy được link tải xuống!"
+        exit 1
+    fi
+
     req "$download_link"
 }
 
-APKM_FILE=$apkpure
+# Lấy APK từ apkpure
+APKM_FILE=$(apkpure)
+
+# Kiểm tra nếu APK tải về không thành công
+if [[ ! -f "$APKM_FILE" ]]; then
+    echo "[!] Lỗi: Không tải được APK!"
+    exit 1
+fi
 
 # Tải APKEditor
-req "https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar" "APKEditor.jar"
-java -jar APKEditor.jar m -i "$APKM_FILE"
+APK_EDITOR_URL="https://github.com/REAndroid/APKEditor/releases/download/V1.4.2/APKEditor-1.4.2.jar"
+APK_EDITOR_JAR="APKEditor.jar"
+
+req "$APK_EDITOR_URL" "$APK_EDITOR_JAR"
+
+if [[ ! -f "$APK_EDITOR_JAR" ]]; then
+    echo "[!] Lỗi: Không tải được APKEditor!"
+    exit 1
+fi
+
+# Sử dụng APKEditor để chỉnh sửa APK
+java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE"
 
 # Xác định apksigner
 if ! command -v apksigner &> /dev/null; then
@@ -51,12 +77,22 @@ else
     APKSIGNER="apksigner"
 fi
 
-[[ -z "$APKSIGNER" ]] && { echo "[!] Không tìm thấy 'apksigner'. Vui lòng cài đặt Android SDK Build-Tools!"; exit 1; }
+if [[ -z "$APKSIGNER" ]]; then
+    echo "[!] Không tìm thấy 'apksigner'. Vui lòng cài đặt Android SDK Build-Tools!"
+    exit 1
+fi
 
 # Ký lại APK
 echo "[*] Ký lại APK..."
 SIGNED_APK="signed.apk"
+MERGED_APK=$(ls *_merged.apk 2>/dev/null | head -n 1)
+
+if [[ -z "$MERGED_APK" ]]; then
+    echo "[!] Lỗi: Không tìm thấy file '_merged.apk' để ký!"
+    exit 1
+fi
+
 "$APKSIGNER" sign --ks public.jks --ks-key-alias public \
-    --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" *_merged.apk
+    --ks-pass pass:public --key-pass pass:public --out "$SIGNED_APK" "$MERGED_APK"
 
 echo "[✔] APK đã được ký lại: $SIGNED_APK"
