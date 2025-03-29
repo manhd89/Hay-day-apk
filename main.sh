@@ -64,6 +64,6 @@ echo "[*] Ký lại APK..."
 
 # Ký APK
 "$APKSIGNER" sign --ks public.jks --ks-key-alias public \
-    --ks-pass pass:public --key-pass pass:public --out signed.apk hay-day*.apk
+    --ks-pass pass:public --key-pass pass:public --out signed.apk spotify*.apk
 
 echo "[✔] APK đã được ký lại: $SIGNED_APK"
