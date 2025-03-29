@@ -17,7 +17,7 @@ download_github() {
     name=$1
     repo=$2
     local github_api_url="https://api.github.com/repos/$name/$repo/releases/latest"
-    local page=$(http_request - 2>/dev/null "$github_api_url")
+    local page=$(req "$github_api_url" - 2>/dev/null)
     local asset_urls=$(echo "$page" | jq -r '.assets[] | select(.name | endswith(".asc") | not) | "\(.browser_download_url) \(.name)"')
     while read -r download_url asset_name; do
         req "$download_url" "$asset_name"
@@ -107,7 +107,7 @@ if [[ "$APKM_FILE" == *.xapk ]]; then
     fi
 
     # Sử dụng APKEditor để merge file
-    java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE" >/dev/null
+    java -jar "$APK_EDITOR_JAR" m -i "$APKM_FILE" 2>/dev/null
 
     java -jar revanced-cli*.jar patch --patches patches*.rvp --out "patched-spotify-v$version.apk" "*_merged.apk"
 
